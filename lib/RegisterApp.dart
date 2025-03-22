@@ -3,6 +3,9 @@ import 'package:flutter_application_2/DashboardScreen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_application_2/db.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,7 +19,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _contactNumberController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
+
+  String _verificationId = "";
+  bool _isPhoneVerified = false;
 
   @override
   void dispose() {
@@ -24,16 +34,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _contactNumberController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text("Register Screen"), // Placeholder UI
+      ),
+    );
+  }
+
+  Future<void> _verifyPhoneNumber() async {
+    String contactNumber = _contactNumberController.text.trim();
+    if (contactNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Please enter your contact number"),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    await _auth.verifyPhoneNumber(
+      phoneNumber: contactNumber,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _auth.signInWithCredential(credential);
+        setState(() => _isPhoneVerified = true);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Phone number verified automatically"),
+          backgroundColor: Colors.green,
+        ));
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Verification Failed: ${e.message}"),
+          backgroundColor: Colors.red,
+        ));
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        _verificationId = verificationId;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("OTP sent to your phone number"),
+          backgroundColor: Colors.green,
+        ));
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _verificationId = verificationId;
+      },
+    );
+  }
+
+  Future<void> _verifyOTP() async {
+    try {
+      String otp = _otpController.text.trim();
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId,
+        smsCode: otp,
+      );
+      await _auth.signInWithCredential(credential);
+      setState(() => _isPhoneVerified = true);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Phone number verified successfully"),
+        backgroundColor: Colors.green,
+      ));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("OTP Verification Failed: ${e.toString()}"),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
   Future<void> _registerUser() async {
+    if (!_isPhoneVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Please verify your phone number first"),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
+    String contactNumber = _contactNumberController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty || contactNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Please fill in all fields"),
         backgroundColor: Colors.red,
@@ -49,130 +139,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    String result = await _firestoreService.registerUser(
-      userName: name,
-      userEmail: email,
-      password: password,
-    );
-
-    if (result == "Success") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+    try {
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-    } else {
+      User? user = userCredential.user;
+      if (user != null) {
+        await _firestore.collection("users").doc(user.uid).set({
+          "userId": user.uid,
+          "userName": name,
+          "userEmail": email,
+          "contactNumber": contactNumber,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(result),
+        content: Text("Error: ${e.toString()}"),
         backgroundColor: Colors.red,
       ));
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Background Image
-          Positioned.fill(
-            child: Image.asset(
-              "assets/background.jpg",
-              fit: BoxFit.cover,
-            ),
-          ),
-          // Dark Overlay for Readability
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-            ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "ECOPLUSE",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lato(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Registration Form
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Register Your Account",
-                            style: TextStyle(
-                              fontSize: 23,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          buildInputField("Full Name", Icons.person, _nameController),
-                          const SizedBox(height: 10),
-                          buildInputField("Email", Icons.email, _emailController),
-                          const SizedBox(height: 10),
-                          buildInputField("Password", Icons.lock, _passwordController, isPassword: true),
-                          const SizedBox(height: 10),
-                          buildInputField("Confirm Password", Icons.lock, _confirmPasswordController, isPassword: true),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: ElevatedButton(
-                              onPressed: _registerUser,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[700],
-                                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: const Text("REGISTER", style: TextStyle(fontSize: 18, color: Colors.white)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildInputField(String hint, IconData icon, TextEditingController controller, {bool isPassword = false}) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      style: const TextStyle(color: Colors.black),
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.green),
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
   }
 }

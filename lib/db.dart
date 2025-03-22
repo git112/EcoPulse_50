@@ -12,10 +12,8 @@ class FirestoreService {
   }) async {
     try {
       // Create a new user in Firebase Authentication
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: userEmail,
-        password: password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: userEmail, password: password);
 
       // Store user details in Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({

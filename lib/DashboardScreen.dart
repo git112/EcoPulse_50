@@ -14,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
             child: Image.asset("assets/background.jpg", fit: BoxFit.cover),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withOpacity(0.5)),
+            child: Container(color: Colors.black.withOpacity(0.7)),
           ),
           Center(
             child: Column(
@@ -23,7 +23,7 @@ class DashboardScreen extends StatelessWidget {
                 const Text(
                   "DASHBOARD",
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 45,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -33,14 +33,14 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.person,
                   title: "Individual",
                   description: "Track your personal carbon footprint",
-                  iconColor: Colors.green,
+                  iconColor: const Color.fromARGB(255, 255, 255, 255),
                 ),
                 const SizedBox(height: 20),
                 buildOptionCard(
                   icon: Icons.apartment,
                   title: "Organization",
                   description: "Manage your company's environmental impact",
-                  iconColor: const Color.fromARGB(255, 86, 169, 236),
+                  iconColor: const Color.fromARGB(255, 255, 255, 255),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
@@ -83,34 +83,37 @@ class DashboardScreen extends StatelessWidget {
     required Color iconColor,
   }) {
     return Container(
-      width: 300,
+      width: 350,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           CircleAvatar(
-            backgroundColor: iconColor.withOpacity(0.3),
+            backgroundColor: iconColor.withOpacity(0.5),
             radius: 30,
-            child: Icon(icon, color: iconColor, size: 30),
+            child: Icon(icon, color: iconColor, size: 35),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 30),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 10),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 17,
+              color: Color.fromARGB(255, 248, 245, 245),
+            ),
           ),
         ],
       ),

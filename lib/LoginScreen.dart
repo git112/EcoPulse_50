@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/RegisterApp.dart';
+import 'package:flutter_application_2/DashboardScreen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
@@ -21,20 +24,38 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _loginUser() async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+
+      if (userCredential.user != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
             child: Image.asset("assets/background.jpg", fit: BoxFit.cover),
           ),
-          // Dark Overlay for Readability
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.5)),
           ),
-          // Responsive Content Layout
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -45,7 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Motivational Quote
                     Text(
                       "ECOPLUSE",
                       textAlign: TextAlign.center,
@@ -56,7 +76,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Login Form with Glassmorphic Effect
                     Container(
                       padding: const EdgeInsets.all(20),
                       width: MediaQuery.of(context).size.width * 0.85,
@@ -119,15 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 20),
                           Center(
                             child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => const RegisterScreen(),
-                                  ),
-                                );
-                              },
+                              onPressed: _loginUser,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green[700],
                                 padding: const EdgeInsets.symmetric(
@@ -151,7 +162,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Social Media Icons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
