@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_2/DashboardScreen.dart';
-import 'package:flutter_application_2/LoginScreen.dart'; // Make sure you have this screen
+import 'package:flutter_application_2/LoginScreen.dart';
+import 'package:flutter_application_2/UserDashboardScreen.dart'; // Make sure you have this screen
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void _checkUserLogin() {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserDashboardScreen()));
     } else {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
     }

@@ -102,7 +102,7 @@ class _OrganizationalEmissionsCalculatorState
           style: TextStyle(
               fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: Colors.green[900],
+        backgroundColor: const Color.fromARGB(255, 35, 81, 38),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
