@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
+import 'event.dart';
 
 class CreateEventScreen extends StatefulWidget {
   @override
@@ -10,63 +10,65 @@ class CreateEventScreen extends StatefulWidget {
 
 class _CreateEventScreenState extends State<CreateEventScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _title = '';
-  String _description = '';
-  String _location = '';
-  DateTime _dateTime = DateTime.now();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _dateController = TextEditingController();
+  final _timeController = TextEditingController();
 
-  Future<void> _selectDateTime(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _dateTime,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_dateTime),
-      );
-      if (pickedTime != null) {
-        setState(() {
-          _dateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        });
-      }
-    }
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _locationController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
+    super.dispose();
   }
 
-  void _createEvent() async {
+  Future<void> _createEvent() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      try {
+        User? user = _auth.currentUser;
+        if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Please log in to create an event')),
+          );
+          return;
+        }
 
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User not authenticated.')),
+        // Create a new event document
+        DocumentReference eventRef = _firestore.collection('events').doc();
+        Event newEvent = Event(
+          id: eventRef.id,
+          title: _titleController.text,
+          description: _descriptionController.text,
+          location: _locationController.text,
+          date: _dateController.text,
+          time: _timeController.text,
+          creatorEmail: user.email!,
         );
-        return;
+
+        await eventRef.set(newEvent.toMap());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Event created successfully')),
+        );
+
+        // Clear the form
+        _titleController.clear();
+        _descriptionController.clear();
+        _locationController.clear();
+        _dateController.clear();
+        _timeController.clear();
+      } catch (e) {
+        print('Error creating event: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create event: $e')),
+        );
       }
-
-      await FirebaseFirestore.instance.collection('events').add({
-        'title': _title,
-        'description': _description,
-        'location': _location,
-        'dateTime': Timestamp.fromDate(_dateTime),
-        'creatorId': userId,
-        'participants': [userId], // Creator automatically joins the event
-        'createdAt': Timestamp.now(),
-      });
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Event created successfully!')),
-      );
     }
   }
 
@@ -74,87 +76,68 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create Eco-Friendly Event'),
+        title: Text('Create Event'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Event Title',
-                  border: OutlineInputBorder(),
-                ),
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Event Title'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
+                    return 'Please enter the event title';
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _title = value!;
-                },
               ),
-              SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a description';
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _description = value!;
-                },
               ),
-              SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Location',
-                  border: OutlineInputBorder(),
-                ),
+                controller: _locationController,
+                decoration: InputDecoration(labelText: 'Location'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a location';
+                    return 'Please enter the location';
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _location = value!;
+              ),
+              TextFormField(
+                controller: _dateController,
+                decoration: InputDecoration(labelText: 'Date (e.g., 2025-03-22)'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the date';
+                  }
+                  return null;
                 },
               ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Date & Time: ${DateFormat('yyyy-MM-dd HH:mm').format(_dateTime)}',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _selectDateTime(context),
-                    child: Text('Select Date & Time'),
-                  ),
-                ],
+              TextFormField(
+                controller: _timeController,
+                decoration: InputDecoration(labelText: 'Time (e.g., 14:00)'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the time';
+                  }
+                  return null;
+                },
               ),
-              SizedBox(height: 32),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _createEvent,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  'Create Event',
-                  style: TextStyle(fontSize: 16),
-                ),
+                child: Text('Create Event'),
               ),
             ],
           ),
