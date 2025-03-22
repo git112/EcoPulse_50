@@ -52,6 +52,7 @@ dependencies:
   path_provider: ^2.1.5
   screenshot: ^3.0.0
   sqflite: ^2.4.2
+  flutter_dotenv: ^5.1.0
   # adaptive_icon_foreground: "assets/logo.jpg"
   # adaptive_icon_background: "#ffffff"
 dev_dependencies:
