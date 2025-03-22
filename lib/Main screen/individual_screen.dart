@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_2/travel.dart';
 
 // Main screen with categories
 class ClimateActionsScreen extends StatelessWidget {
@@ -63,26 +64,8 @@ class ClimateActionsScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "ECOPULSE",
-                        style: TextStyle(
-                          fontSize: 35,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.5),
-                              offset: Offset(1, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.white.withOpacity(0.8),
-                        child: Icon(Icons.person, color: Colors.grey[600]),
-                      ),
+                     
+                      
                     ],
                   ),
                 ),
@@ -176,7 +159,7 @@ class _CategoryCardState extends State<CategoryCard> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FinalPage(category: widget.title),
+                builder: (context) => TravelEmissions_Calculator(),
               ),
             );
           },
