@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_application_2/LoginScreen.dart';
+import 'package:flutter_application_2/individual_home.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});

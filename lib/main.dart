@@ -2,10 +2,15 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/DashboardScreen.dart';
+import 'package:flutter_application_2/Organizational.dart';
 import 'package:flutter_application_2/RegisterApp.dart';
+import 'package:flutter_application_2/individual_home.dart';
 import 'package:flutter_application_2/splash_screen.dart';
+import 'package:flutter_application_2/test.dart';
+import 'package:flutter_application_2/travel.dart';
 import 'LoginScreen.dart';
-import 'Main screen/individual_screen.dart'; // Ensure correct import
+import 'package:flutter_application_2/individual_home.dart' as home;
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +31,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ecopluse App',
-      home: SplashScreen(),
+home: OrganizationalEmissionsCalculator()
+
+
     );
   }
 }
