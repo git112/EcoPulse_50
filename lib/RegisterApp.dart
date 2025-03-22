@@ -19,14 +19,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final TextEditingController _contactNumberController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
-
-  String _verificationId = "";
-  bool _isPhoneVerified = false;
 
   @override
   void dispose() {
@@ -34,96 +29,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _contactNumberController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text("Register Screen"), // Placeholder UI
-      ),
-    );
-  }
-
-  Future<void> _verifyPhoneNumber() async {
-    String contactNumber = _contactNumberController.text.trim();
-    if (contactNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Please enter your contact number"),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
-
-    await _auth.verifyPhoneNumber(
-      phoneNumber: contactNumber,
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        await _auth.signInWithCredential(credential);
-        setState(() => _isPhoneVerified = true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Phone number verified automatically"),
-          backgroundColor: Colors.green,
-        ));
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Verification Failed: ${e.message}"),
-          backgroundColor: Colors.red,
-        ));
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        _verificationId = verificationId;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("OTP sent to your phone number"),
-          backgroundColor: Colors.green,
-        ));
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        _verificationId = verificationId;
-      },
-    );
-  }
-
-  Future<void> _verifyOTP() async {
-    try {
-      String otp = _otpController.text.trim();
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: otp,
-      );
-      await _auth.signInWithCredential(credential);
-      setState(() => _isPhoneVerified = true);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Phone number verified successfully"),
-        backgroundColor: Colors.green,
-      ));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("OTP Verification Failed: ${e.toString()}"),
-        backgroundColor: Colors.red,
-      ));
-    }
-  }
-
   Future<void> _registerUser() async {
-    if (!_isPhoneVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Please verify your phone number first"),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
-
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
-    String contactNumber = _contactNumberController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty || contactNumber.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Please fill in all fields"),
         backgroundColor: Colors.red,
@@ -150,7 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           "userId": user.uid,
           "userName": name,
           "userEmail": email,
-          "contactNumber": contactNumber,
           "createdAt": FieldValue.serverTimestamp(),
         });
         Navigator.pushReplacement(
@@ -164,5 +78,146 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.red,
       ));
     }
+  }
+
+  Future<void> _signInWithGoogle() async {
+  try {
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Google Sign-In Cancelled"),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    UserCredential userCredential = await _auth.signInWithCredential(credential);
+    User? user = userCredential.user;
+
+    if (user != null) {
+      // Check if user exists in Firestore
+      DocumentSnapshot userDoc = await _firestore.collection("users").doc(user.uid).get();
+      if (!userDoc.exists) {
+        await _firestore.collection("users").doc(user.uid).set({
+          "userId": user.uid,
+          "userName": user.displayName,
+          "userEmail": user.email,
+          "photoUrl": user.photoURL,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+      }
+      
+      // Navigate to Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen()),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text("Google Sign-In Failed: ${e.toString()}"),
+      backgroundColor: Colors.red,
+    ));
+  }
+}
+
+
+  Widget buildRegistrationForm() {
+    return Column(
+      children: [
+        buildInputField("Full Name", Icons.person, _nameController),
+        buildInputField("Email", Icons.email, _emailController),
+        buildInputField("Password", Icons.lock, _passwordController, isPassword: true),
+        buildInputField("Confirm Password", Icons.lock, _confirmPasswordController, isPassword: true),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: _registerUser,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green[700],
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          ),
+          child: const Text("REGISTER", style: TextStyle(fontSize: 18, color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Widget buildInputField(String hint, IconData icon, TextEditingController controller, {bool isPassword = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        style: const TextStyle(color: Colors.black),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: Colors.green),
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.black),
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.9),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset("assets/background.jpg", fit: BoxFit.cover),
+          ),
+          Positioned.fill(
+            child: Container(color: Colors.black.withOpacity(0.5)),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "ECOPLUSE",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lato(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    buildRegistrationForm(),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _signInWithGoogle,
+                      icon: const FaIcon(FontAwesomeIcons.google, color: Colors.white),
+                      label: const Text("Continue with Google", style: TextStyle(fontSize: 18, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red[600],
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

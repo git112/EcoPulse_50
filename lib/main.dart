@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/DashboardScreen.dart';
 import 'package:flutter_application_2/RegisterApp.dart';
+import 'package:flutter_application_2/splash_screen.dart';
 import 'LoginScreen.dart';
 import 'Main screen/individual_screen.dart'; // Ensure correct import
 
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ecopluse App',
-      home: RegisterScreen(),
+      home: SplashScreen(),
     );
   }
 }

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_2/DashboardScreen.dart';
+import 'package:flutter_application_2/RegisterApp.dart';
+import 'package:flutter_application_2/ForgotPasswordScreen.dart'; // Import Forgot Password Screen
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -28,12 +30,12 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
       if (userCredential.user != null) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
@@ -155,6 +157,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontSize: 18,
                                   color: Colors.white,
                                 ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Forgot Password Button
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                                );
+                              },
+                              child: const Text(
+                                "Forgot Password?",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+
+                          // Register Now Button
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                                );
+                              },
+                              child: const Text(
+                                "Don't have an account? Register Now",
+                                style: TextStyle(color: Colors.white),
                               ),
                             ),
                           ),
