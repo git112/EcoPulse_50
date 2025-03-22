@@ -1,20 +1,27 @@
-<<<<<<< HEAD
-# flutter_application_2
+# 🌱Eco Pluse
 
-A new Flutter project.
+Eco Pluse helps users track and reduce their carbon footprint in **Travel, Energy, Food, Waste, and Shopping** through gamification, challenges, and real-time CO₂ insights. It offers dashboards for both individual users and organizations to monitor and improve sustainability efforts.
+
+## Features
+- **Take Action**: Daily eco-friendly tasks.
+- **Challenge Yourself**: Set sustainability goals.
+- **Track Impact**: Log transport, energy use, food choices, waste, and shopping habits.
+- **Eco-Rewards**: Earn eco-coins for sustainable choices.
+- **Real-Time Insights**: Instant CO₂ feedback and personalized challenges.
+
+## Tech Stack
+- **Flutter** (Frontend), **Firebase Firestore** (Backend)
+- **Firebase Authentication** (Secure login)
+- **Cloud Functions** (CO₂ calculations)
 
 ## Getting Started
+1. Clone the repo.
+2. Install Flutter & Firebase SDK.
+3. Set up Firebase & Firestore.
+4. Run `flutter run`.
 
-This project is a starting point for a Flutter application.
+## License
+MIT License
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-=======
-# ecopluse
->>>>>>> ff5eab798a774bd743f9ffe4033b9803f1ba34b0
+---
+Start making a positive impact with Eco Pluse! 🌱
