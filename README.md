@@ -1,6 +1,6 @@
-# 🌱Eco Pluse
+# 🌱Eco Pulse
 
-Eco Pluse helps users track and reduce their carbon footprint in **Travel, Energy, Food, Waste, and Shopping** through gamification, challenges, and real-time CO₂ insights. It offers dashboards for both individual users and organizations to monitor and improve sustainability efforts.
+Eco Pulse helps users track and reduce their carbon footprint in **Travel, Energy, Food, Waste, and Shopping** through gamification, challenges, and real-time CO₂ insights. It offers dashboards for both individual users and organizations to monitor and improve sustainability efforts.
 
 ## Features
 - **Take Action**: Daily eco-friendly tasks.
