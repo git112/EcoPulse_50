@@ -62,12 +62,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       User? user = userCredential.user;
       if (user != null) {
-        await _firestore.collection("users").doc(user.uid).set({
-          "userId": user.uid,
-          "userName": name,
-          "userEmail": email,
-          "createdAt": FieldValue.serverTimestamp(),
-        });
+      await _firestore.collection("users").doc(user.uid).set({
+  "userId": user.uid,
+  "userName": name,
+  "userEmail": email,
+  "createdAt": FieldValue.serverTimestamp(),
+});
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => UserDashboardScreen()),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_2/LoginScreen.dart';
 import 'package:flutter_application_2/history_screen.dart';
 import 'package:flutter_application_2/leaderboard_screen.dart';
 
@@ -32,15 +33,18 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
       User? user = _auth.currentUser;
       if (user != null) {
+        // Get email directly from Firebase Authentication
+        _email = user.email ?? 'Not available';
+
+        // Fetch additional user info (e.g., name) from Firestore
         DocumentSnapshot userDoc = await _firestore
-            .collection('users')
+            .collection('user_calculations') // Updated to user_calculations
             .doc(user.uid)
             .get();
 
         if (userDoc.exists) {
           setState(() {
             _name = userDoc.get('name') ?? 'Guest';
-            _email = userDoc.get('email') ?? 'Not available';
             _isLoading = false;
           });
         } else {
@@ -60,6 +64,23 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  // Add logout method
+  Future<void> _logout() async {
+    try {
+      await _auth.signOut();
+      // Navigate to LoginScreen after logout
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (Route<dynamic> route) => false, // Remove all previous routes
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logout failed: $e')),
+      );
     }
   }
 
@@ -149,6 +170,19 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           ),
                           child: const Text(
                             'Leaderboard',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Add Logout Button
+                        ElevatedButton(
+                          onPressed: _logout,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red, // Red color to indicate logout
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          ),
+                          child: const Text(
+                            'Logout',
                             style: TextStyle(color: Colors.white, fontSize: 18),
                           ),
                         ),

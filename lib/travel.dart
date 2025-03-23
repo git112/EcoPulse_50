@@ -347,7 +347,7 @@ class _TravelEmissions_CalculatorState extends State<TravelEmissions_Calculator>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Travel Emissions Calculator'),
-        backgroundColor: Colors.blue[900],
+        backgroundColor: const Color.fromARGB(255, 69, 131, 94),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
