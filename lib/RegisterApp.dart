@@ -24,6 +24,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
+  // Password validation states
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Add listeners to validate password in real-time
+    _passwordController.addListener(_validatePassword);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -33,12 +47,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // Email validation using a regular expression
+  bool _isEmailValid(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  // Password validation
+  void _validatePassword() {
+    String password = _passwordController.text;
+    setState(() {
+      _hasMinLength = password.length >= 8;
+      _hasUppercase = password.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = password.contains(RegExp(r'[a-z]'));
+      _hasNumber = password.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+    });
+  }
+
+  // Check if password meets all criteria
+  bool _isPasswordValid() {
+    return _hasMinLength &&
+        _hasUppercase &&
+        _hasLowercase &&
+        _hasNumber &&
+        _hasSpecialChar;
+  }
+
   Future<void> _registerUser() async {
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
 
+    // Check for empty fields
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Please fill in all fields"),
@@ -47,6 +89,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Validate email
+    if (!_isEmailValid(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Please enter a valid email address"),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    // Validate password
+    if (!_isPasswordValid()) {
+      String errorMessage = "Password must:\n";
+      if (!_hasMinLength) errorMessage += "- Be at least 8 characters long\n";
+      if (!_hasUppercase) errorMessage += "- Contain at least one uppercase letter\n";
+      if (!_hasLowercase) errorMessage += "- Contain at least one lowercase letter\n";
+      if (!_hasNumber) errorMessage += "- Contain at least one number\n";
+      if (!_hasSpecialChar) errorMessage += "- Contain at least one special character\n";
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+      ));
+      return;
+    }
+
+    // Check if passwords match
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Passwords do not match"),
@@ -55,6 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    // Proceed with registration if all validations pass
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -62,12 +131,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       User? user = userCredential.user;
       if (user != null) {
-      await _firestore.collection("users").doc(user.uid).set({
-  "userId": user.uid,
-  "userName": name,
-  "userEmail": email,
-  "createdAt": FieldValue.serverTimestamp(),
-});
+        await _firestore.collection("users").doc(user.uid).set({
+          "userId": user.uid,
+          "userName": name,
+          "userEmail": email,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => UserDashboardScreen()),
@@ -82,52 +151,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
-  try {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    if (googleUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Google Sign-In Cancelled"),
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Google Sign-In Cancelled"),
+          backgroundColor: Colors.red,
+        ));
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Check if user exists in Firestore
+        DocumentSnapshot userDoc = await _firestore.collection("users").doc(user.uid).get();
+        if (!userDoc.exists) {
+          await _firestore.collection("users").doc(user.uid).set({
+            "userId": user.uid,
+            "userName": user.displayName,
+            "userEmail": user.email,
+            "photoUrl": user.photoURL,
+            "createdAt": FieldValue.serverTimestamp(),
+          });
+        }
+        
+        // Navigate to Dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Google Sign-In Failed: ${e.toString()}"),
         backgroundColor: Colors.red,
       ));
-      return;
     }
-
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    UserCredential userCredential = await _auth.signInWithCredential(credential);
-    User? user = userCredential.user;
-
-    if (user != null) {
-      // Check if user exists in Firestore
-      DocumentSnapshot userDoc = await _firestore.collection("users").doc(user.uid).get();
-      if (!userDoc.exists) {
-        await _firestore.collection("users").doc(user.uid).set({
-          "userId": user.uid,
-          "userName": user.displayName,
-          "userEmail": user.email,
-          "photoUrl": user.photoURL,
-          "createdAt": FieldValue.serverTimestamp(),
-        });
-      }
-      
-      // Navigate to Dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen()),
-      );
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text("Google Sign-In Failed: ${e.toString()}"),
-      backgroundColor: Colors.red,
-    ));
   }
-}
-
 
   Widget buildRegistrationForm() {
     return Column(
@@ -135,6 +203,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         buildInputField("Full Name", Icons.person, _nameController),
         buildInputField("Email", Icons.email, _emailController),
         buildInputField("Password", Icons.lock, _passwordController, isPassword: true),
+        // Password requirements UI
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Password must contain:",
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              _buildRequirementText("At least 8 characters", _hasMinLength),
+              _buildRequirementText("At least one uppercase letter", _hasUppercase),
+              _buildRequirementText("At least one lowercase letter", _hasLowercase),
+              _buildRequirementText("At least one number", _hasNumber),
+              _buildRequirementText("At least one special character", _hasSpecialChar),
+            ],
+          ),
+        ),
         buildInputField("Confirm Password", Icons.lock, _confirmPasswordController, isPassword: true),
         const SizedBox(height: 20),
         ElevatedButton(
@@ -145,6 +231,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
           child: const Text("REGISTER", style: TextStyle(fontSize: 18, color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRequirementText(String text, bool isMet) {
+    return Row(
+      children: [
+        Icon(
+          isMet ? Icons.check_circle : Icons.cancel,
+          color: isMet ? Colors.green : Colors.red,
+          size: 16,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: isMet ? Colors.green : Colors.red,
+            fontSize: 14,
+          ),
         ),
       ],
     );

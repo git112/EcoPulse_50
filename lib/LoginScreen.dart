@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_2/DashboardScreen.dart';
 import 'package:flutter_application_2/RegisterApp.dart';
 import 'package:flutter_application_2/ForgotPasswordScreen.dart'; // Import Forgot Password Screen
+import 'package:flutter_application_2/UserDashboardScreen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (userCredential.user != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const UserDashboardScreen()),
         );
       }
     } catch (e) {
